@@ -1278,7 +1278,8 @@ LoadInst::LoadInst(Type *Ty, Value *Ptr, const Twine &Name, bool isVolatile,
 LoadInst::LoadInst(Type *Ty, Value *Ptr, const Twine &Name, bool isVolatile,
                    Align Align, AtomicOrdering Order, SyncScope::ID SSID,
                    InsertPosition InsertBef)
-    : UnaryInstruction(Ty, Load, Ptr, InsertBef) {
+    : Instruction(Ty, Load, &Op<0>(), 1, InsertBef) {
+  Op<0>() = Ptr;
   setVolatile(isVolatile);
   setAlignment(Align);
   setAtomic(Order, SSID);

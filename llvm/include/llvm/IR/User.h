@@ -196,18 +196,8 @@ public:
   /// Returns the descriptor co-allocated with this User instance.
   MutableArrayRef<uint8_t> getDescriptor();
 
-  /// Set the number of operands on a GlobalVariable.
-  ///
-  /// GlobalVariable always allocates space for a single operands, but
-  /// doesn't always use it.
-  ///
-  /// FIXME: As that the number of operands is used to find the start of
-  /// the allocated memory in operator delete, we need to always think we have
-  /// 1 operand before delete.
-  void setGlobalVariableNumOperands(unsigned NumOps) {
-    assert(NumOps <= 1 && "GlobalVariable can only have 0 or 1 operands");
-    NumUserOperands = NumOps;
-  }
+  /// Set the number of operands.
+  void setNumOperands(unsigned NumOps) { NumUserOperands = NumOps; }
 
   /// Subclasses with hung off uses need to manage the operand count
   /// themselves.  In these instances, the operand count isn't used to find the
@@ -215,7 +205,7 @@ public:
   void setNumHungOffUseOperands(unsigned NumOps) {
     assert(HasHungOffUses && "Must have hung off uses to use this method");
     assert(NumOps < (1u << NumUserOperandsBits) && "Too many operands");
-    NumUserOperands = NumOps;
+    setNumOperands(NumOps);
   }
 
   /// A droppable user is a user for which uses can be dropped without affecting

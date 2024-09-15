@@ -489,7 +489,7 @@ void GlobalVariable::setInitializer(Constant *InitVal) {
       // the order here matters.  Clearing the operand then clearing the num
       // operands ensures we have the correct offset to the operand.
       Op<0>().set(nullptr);
-      setGlobalVariableNumOperands(0);
+      setNumOperands(0);
     }
   } else {
     assert(InitVal->getType() == getValueType() &&
@@ -498,7 +498,7 @@ void GlobalVariable::setInitializer(Constant *InitVal) {
     // the order here matters.  We need to set num operands to 1 first so that
     // we get the correct offset to the first operand when we set it.
     if (!hasInitializer())
-      setGlobalVariableNumOperands(1);
+      setNumOperands(1);
     Op<0>().set(InitVal);
   }
 }

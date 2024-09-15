@@ -85,7 +85,7 @@ public:
     User *Obj = static_cast<User *>(ptr);
     // Number of operands can be set to 0 after construction and initialization. Make sure
     // that number of operands is reset to 1, as this is needed in User::operator delete
-    Obj->setGlobalVariableNumOperands(1);
+    Obj->setNumOperands(1);
     User::operator delete(Obj);
   }
 

@@ -82,7 +82,6 @@ public:
   static bool classof(const Instruction *I) {
     return I->isUnaryOp() ||
            I->getOpcode() == Instruction::Alloca ||
-           I->getOpcode() == Instruction::Load ||
            I->getOpcode() == Instruction::VAArg ||
            I->getOpcode() == Instruction::ExtractValue ||
            (I->getOpcode() >= CastOpsBegin && I->getOpcode() < CastOpsEnd);

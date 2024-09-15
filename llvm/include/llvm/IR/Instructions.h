@@ -171,7 +171,7 @@ private:
 
 /// An instruction for reading from memory. This uses the SubclassData field in
 /// Value to store whether or not the load is volatile.
-class LoadInst : public UnaryInstruction {
+class LoadInst : public Instruction {
   using VolatileField = BoolBitfieldElementT<0>;
   using AlignmentField = AlignmentBitfieldElementT<VolatileField::NextBit>;
   using OrderingField = AtomicOrderingBitfieldElementT<AlignmentField::NextBit>;
@@ -268,6 +268,15 @@ public:
     return isa<Instruction>(V) && classof(cast<Instruction>(V));
   }
 
+  DECLARE_TRANSPARENT_OPERAND_ACCESSORS(Value);
+
+  // allocate space for exactly two operands
+  void *operator new(size_t S) { return User::operator new(S, 2); }
+  void operator delete(void *Ptr) {
+    static_cast<User *>(Ptr)->setNumOperands(2);
+    User::operator delete(Ptr);
+  }
+
 private:
   // Shadow Instruction::setInstructionSubclassData with a private forwarding
   // method so that subclasses cannot accidentally use it.
@@ -281,6 +290,21 @@ private:
   /// own field.
   SyncScope::ID SSID;
 };
+
+template <> struct OperandTraits<LoadInst> {
+  static Use *op_begin(LoadInst *U) {
+    static_assert(
+        !std::is_polymorphic<LoadInst>::value,
+        "adding virtual methods to subclasses of User breaks use lists");
+    return reinterpret_cast<Use *>(U) - operands(U);
+  }
+
+  static Use *op_end(LoadInst *U) { return reinterpret_cast<Use *>(U); }
+
+  static unsigned operands(const User *u) { return u->getNumOperands(); }
+};
+
+DEFINE_TRANSPARENT_OPERAND_ACCESSORS(LoadInst, Value)
 
 //===----------------------------------------------------------------------===//
 //                                StoreInst Class
@@ -4971,4 +4995,4 @@ public:
 
 } // end namespace llvm
 
-#endif // LLVM_IR_INSTRUCTIONS_H
+#endif //
