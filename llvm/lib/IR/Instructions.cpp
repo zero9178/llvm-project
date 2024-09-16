@@ -1314,9 +1314,8 @@ StoreInst::StoreInst(Value *val, Value *addr, bool isVolatile, Align Align,
 StoreInst::StoreInst(Value *val, Value *addr, bool isVolatile, Align Align,
                      AtomicOrdering Order, SyncScope::ID SSID,
                      InsertPosition InsertBefore)
-    : Instruction(Type::getVoidTy(val->getContext()), Store,
-                  OperandTraits<StoreInst>::op_begin(this),
-                  OperandTraits<StoreInst>::operands(this), InsertBefore) {
+    : Instruction(Type::getVoidTy(val->getContext()), Store, &Op<0>(), 2,
+                  InsertBefore) {
   Op<0>() = val;
   Op<1>() = addr;
   setVolatile(isVolatile);

@@ -338,8 +338,11 @@ public:
             InsertPosition InsertBefore = nullptr);
 
   // allocate space for exactly two operands
-  void *operator new(size_t S) { return User::operator new(S, 2); }
-  void operator delete(void *Ptr) { User::operator delete(Ptr); }
+  void *operator new(size_t S) { return User::operator new(S, 4); }
+  void operator delete(void *Ptr) {
+    static_cast<User *>(Ptr)->setNumOperands(4);
+    User::operator delete(Ptr);
+  }
 
   /// Return true if this is a store to a volatile memory location.
   bool isVolatile() const { return getSubclassData<VolatileField>(); }
@@ -430,8 +433,17 @@ private:
   SyncScope::ID SSID;
 };
 
-template <>
-struct OperandTraits<StoreInst> : public FixedNumOperandTraits<StoreInst, 2> {
+template <> struct OperandTraits<StoreInst> {
+  static Use *op_begin(StoreInst *U) {
+    static_assert(
+        !std::is_polymorphic<LoadInst>::value,
+        "adding virtual methods to subclasses of User breaks use lists");
+    return reinterpret_cast<Use *>(U) - operands(U);
+  }
+
+  static Use *op_end(StoreInst *U) { return reinterpret_cast<Use *>(U); }
+
+  static unsigned operands(const User *u) { return u->getNumOperands(); }
 };
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(StoreInst, Value)
