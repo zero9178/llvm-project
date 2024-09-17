@@ -1,6 +1,7 @@
 ; RUN: opt < %s | opt -S | FileCheck %s
 ; RUN: verify-uselistorder %s
 
-define void @test(ptr %arg0) {
+; CHECK: @test(
+define void @test(ptr %arg0, mem %arg1) {
   ret void
 }

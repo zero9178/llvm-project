@@ -177,6 +177,7 @@ enum TypeCodes {
   TYPE_CODE_OPAQUE_POINTER = 25, // OPAQUE_POINTER: [addrspace]
 
   TYPE_CODE_TARGET_TYPE = 26, // TARGET_TYPE
+  TYPE_CODE_MEMORY_TYPE = 27, // TARGET_TYPE
 };
 
 enum OperandBundleTagCode {
