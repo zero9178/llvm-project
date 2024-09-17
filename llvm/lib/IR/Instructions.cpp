@@ -928,12 +928,21 @@ ReturnInst::ReturnInst(const ReturnInst &RI)
 }
 
 ReturnInst::ReturnInst(LLVMContext &C, Value *retVal,
-                       InsertPosition InsertBefore)
+                       InsertPosition InsertBefore, Value *memVal)
     : Instruction(Type::getVoidTy(C), Instruction::Ret,
                   OperandTraits<ReturnInst>::op_end(this) - !!retVal, !!retVal,
                   InsertBefore) {
-  if (retVal)
+  setSubclassData<HasMemoryOperandField>(false);
+  if (retVal) {
     Op<0>() = retVal;
+    if (memVal) {
+      Op<1>() = memVal;
+      setSubclassData<HasMemoryOperandField>(true);
+    }
+  } else if (memVal) {
+    Op<0>() = memVal;
+    setSubclassData<HasMemoryOperandField>(true);
+  }
 }
 
 //===----------------------------------------------------------------------===//

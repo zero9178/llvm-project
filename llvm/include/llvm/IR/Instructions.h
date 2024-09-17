@@ -299,18 +299,7 @@ private:
   SyncScope::ID SSID;
 };
 
-template <> struct OperandTraits<LoadInst> {
-  static Use *op_begin(LoadInst *U) {
-    static_assert(
-        !std::is_polymorphic<LoadInst>::value,
-        "adding virtual methods to subclasses of User breaks use lists");
-    return reinterpret_cast<Use *>(U) - operands(U);
-  }
-
-  static Use *op_end(LoadInst *U) { return reinterpret_cast<Use *>(U); }
-
-  static unsigned operands(const User *u) { return u->getNumOperands(); }
-};
+template <> struct OperandTraits<LoadInst> : VariadicOperandTraits<LoadInst> {};
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(LoadInst, Value)
 
@@ -441,18 +430,8 @@ private:
   SyncScope::ID SSID;
 };
 
-template <> struct OperandTraits<StoreInst> {
-  static Use *op_begin(StoreInst *U) {
-    static_assert(
-        !std::is_polymorphic<LoadInst>::value,
-        "adding virtual methods to subclasses of User breaks use lists");
-    return reinterpret_cast<Use *>(U) - operands(U);
-  }
-
-  static Use *op_end(StoreInst *U) { return reinterpret_cast<Use *>(U); }
-
-  static unsigned operands(const User *u) { return u->getNumOperands(); }
-};
+template <>
+struct OperandTraits<StoreInst> : VariadicOperandTraits<StoreInst> {};
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(StoreInst, Value)
 
@@ -2883,6 +2862,8 @@ DEFINE_TRANSPARENT_OPERAND_ACCESSORS(LandingPadInst, Value)
 /// does not continue in this function any longer.
 ///
 class ReturnInst : public Instruction {
+  using HasMemoryOperandField = BoolBitfieldElementT<0>;
+
   ReturnInst(const ReturnInst &RI);
 
 private:
@@ -2900,7 +2881,8 @@ private:
   // NOTE: If the Value* passed is of type void then the constructor behaves as
   // if it was passed NULL.
   explicit ReturnInst(LLVMContext &C, Value *retVal = nullptr,
-                      InsertPosition InsertBefore = nullptr);
+                      InsertPosition InsertBefore = nullptr,
+                      Value *memVal = nullptr);
 
 protected:
   // Note: Instruction needs to be a friend here to call cloneImpl.
@@ -2910,8 +2892,9 @@ protected:
 
 public:
   static ReturnInst *Create(LLVMContext &C, Value *retVal = nullptr,
-                            InsertPosition InsertBefore = nullptr) {
-    return new(!!retVal) ReturnInst(C, retVal, InsertBefore);
+                            InsertPosition InsertBefore = nullptr,
+                            Value *memVal = nullptr) {
+    return new (!!retVal) ReturnInst(C, retVal, InsertBefore, memVal);
   }
 
   static ReturnInst *Create(LLVMContext &C, BasicBlock *InsertAtEnd) {
@@ -2923,7 +2906,9 @@ public:
 
   /// Convenience accessor. Returns null if there is no return value.
   Value *getReturnValue() const {
-    return getNumOperands() != 0 ? getOperand(0) : nullptr;
+    return getNumOperands() > getSubclassData<HasMemoryOperandField>()
+               ? getOperand(0)
+               : nullptr;
   }
 
   unsigned getNumSuccessors() const { return 0; }
