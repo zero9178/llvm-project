@@ -1287,6 +1287,25 @@ LoadInst::LoadInst(Type *Ty, Value *Ptr, const Twine &Name, bool isVolatile,
   setName(Name);
 }
 
+void LoadInst::setMemoryOperand(Value *V) {
+  if (V == nullptr) {
+    if (getNumOperands() == 1)
+      return;
+
+    Value *P = getPointerOperand();
+    setNumOperands(1);
+    setOperand(0, P);
+    return;
+  }
+
+  if (getNumOperands() == 1) {
+    Value *P = getPointerOperand();
+    setNumOperands(2);
+    setOperand(0, P);
+  }
+  setOperand(1, V);
+}
+
 //===----------------------------------------------------------------------===//
 //                           StoreInst Implementation
 //===----------------------------------------------------------------------===//

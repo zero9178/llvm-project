@@ -3309,6 +3309,10 @@ void ModuleBitcodeWriter::writeInstruction(const Instruction &I,
       Vals.push_back(getEncodedOrdering(cast<LoadInst>(I).getOrdering()));
       Vals.push_back(getEncodedSyncScopeID(cast<LoadInst>(I).getSyncScopeID()));
     }
+    if (Value *MO = cast<LoadInst>(I).getMemoryOperand()) {
+      pushValue(MO, InstID, Vals);
+      AbbrevToUse = 0;
+    }
     break;
   case Instruction::Store:
     if (cast<StoreInst>(I).isAtomic())

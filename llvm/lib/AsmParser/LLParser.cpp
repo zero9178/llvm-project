@@ -8163,16 +8163,28 @@ int LLParser::parseAlloc(Instruction *&Inst, PerFunctionState &PFS) {
 }
 
 /// parseLoad
-///   ::= 'load' 'volatile'? TypeAndValue (',' 'align' i32)?
+///   ::= 'load' (`mem` `[` Value `]`)? 'volatile'? TypeAndValue (',' 'align'
+///   i32)?
 ///   ::= 'load' 'atomic' 'volatile'? TypeAndValue
 ///       'singlethread'? AtomicOrdering (',' 'align' i32)?
 int LLParser::parseLoad(Instruction *&Inst, PerFunctionState &PFS) {
-  Value *Val; LocTy Loc;
+  Value *Val;
+  Value *MemVal = nullptr;
+  LocTy Loc;
   MaybeAlign Alignment;
   bool AteExtraComma = false;
   bool isAtomic = false;
   AtomicOrdering Ordering = AtomicOrdering::NotAtomic;
   SyncScope::ID SSID = SyncScope::System;
+
+  if (Lex.getKind() == lltok::Type &&
+      Lex.getTyVal() == Type::getMemoryTy(Context)) {
+    Lex.Lex();
+    if (parseToken(lltok::lsquare, "expected '[' after 'mem'") ||
+        parseValue(Type::getMemoryTy(getContext()), MemVal, PFS) ||
+        parseToken(lltok::rsquare, "expected ']' after value"))
+      return true;
+  }
 
   if (Lex.getKind() == lltok::kw_atomic) {
     isAtomic = true;
@@ -8208,6 +8220,8 @@ int LLParser::parseLoad(Instruction *&Inst, PerFunctionState &PFS) {
   if (!Alignment)
     Alignment = M->getDataLayout().getABITypeAlign(Ty);
   Inst = new LoadInst(Ty, Val, "", isVolatile, *Alignment, Ordering, SSID);
+  if (MemVal)
+    cast<LoadInst>(Inst)->setMemoryOperand(MemVal);
   return AteExtraComma ? InstExtraComma : InstNormal;
 }
 

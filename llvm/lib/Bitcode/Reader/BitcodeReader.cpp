@@ -6163,19 +6163,20 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
       InstructionList.push_back(I);
       break;
     }
-    case bitc::FUNC_CODE_INST_LOAD: { // LOAD: [opty, op, align, vol]
+    case bitc::FUNC_CODE_INST_LOAD: { // LOAD: [opty, op, align, vol(, mo)?]
       unsigned OpNum = 0;
       Value *Op;
       unsigned OpTypeID;
       if (getValueTypePair(Record, OpNum, NextValueNo, Op, OpTypeID, CurBB) ||
-          (OpNum + 2 != Record.size() && OpNum + 3 != Record.size()))
+          (OpNum + 2 != Record.size() && OpNum + 3 != Record.size() &&
+           OpNum + 4 != Record.size()))
         return error("Invalid record");
 
       if (!isa<PointerType>(Op->getType()))
         return error("Load operand is not a pointer type");
 
       Type *Ty = nullptr;
-      if (OpNum + 3 == Record.size()) {
+      if (OpNum + 3 <= Record.size()) {
         ResTypeID = Record[OpNum++];
         Ty = getTypeByID(ResTypeID);
       } else {
@@ -6197,7 +6198,17 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
         return error("load of unsized type");
       if (!Align)
         Align = TheModule->getDataLayout().getABITypeAlign(Ty);
+
       I = new LoadInst(Ty, Op, "", Record[OpNum + 1], *Align);
+      if (OpNum + 2 < Record.size()) {
+        Value *MemoryOperand;
+        if (getValue(Record, OpNum + 2, NextValueNo, Type::getMemoryTy(Context),
+                     OpTypeID, MemoryOperand, CurBB)) {
+          I->deleteValue();
+          return error("Invalid record");
+        }
+        cast<LoadInst>(I)->setMemoryOperand(MemoryOperand);
+      }
       InstructionList.push_back(I);
       break;
     }

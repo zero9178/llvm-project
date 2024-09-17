@@ -255,6 +255,14 @@ public:
   static unsigned getPointerOperandIndex() { return 0U; }
   Type *getPointerOperandType() const { return getPointerOperand()->getType(); }
 
+  void setMemoryOperand(Value *V);
+
+  Value *getMemoryOperand() const {
+    if (getNumOperands() <= 1)
+      return nullptr;
+    return getOperand(1);
+  }
+
   /// Returns the address space of the pointer operand.
   unsigned getPointerAddressSpace() const {
     return getPointerOperandType()->getPointerAddressSpace();

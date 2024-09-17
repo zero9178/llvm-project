@@ -4247,6 +4247,13 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
   // Print out the opcode...
   Out << I.getOpcodeName();
 
+  if (auto *Load = dyn_cast<LoadInst>(&I))
+    if (Value *MemoryOp = Load->getMemoryOperand()) {
+      Out << " mem[";
+      writeOperand(MemoryOp, /*PrintType=*/false);
+      Out << "]";
+    }
+
   // If this is an atomic load or store, print out the atomic marker.
   if ((isa<LoadInst>(I)  && cast<LoadInst>(I).isAtomic()) ||
       (isa<StoreInst>(I) && cast<StoreInst>(I).isAtomic()))
@@ -4570,14 +4577,15 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
     }
     Out << ", ";
     TypePrinter.print(I.getType(), Out);
+  } else if (const auto *LI = dyn_cast<LoadInst>(&I)) {
+    Out << ' ';
+    TypePrinter.print(LI->getType(), Out);
+    Out << ", ";
+    writeOperand(LI->getPointerOperand(), true);
   } else if (Operand) {   // Print the normal way.
     if (const auto *GEP = dyn_cast<GetElementPtrInst>(&I)) {
       Out << ' ';
       TypePrinter.print(GEP->getSourceElementType(), Out);
-      Out << ',';
-    } else if (const auto *LI = dyn_cast<LoadInst>(&I)) {
-      Out << ' ';
-      TypePrinter.print(LI->getType(), Out);
       Out << ',';
     }
 
