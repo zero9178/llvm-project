@@ -3070,19 +3070,18 @@ void ModuleBitcodeWriter::writeInstruction(const Instruction &I,
 
   case Instruction::Ret:
     {
-      Code = bitc::FUNC_CODE_INST_RET;
-      unsigned NumOperands = I.getNumOperands();
-      if (NumOperands == 0)
-        AbbrevToUse = FUNCTION_INST_RET_VOID_ABBREV;
-      else if (NumOperands == 1) {
-        if (!pushValueAndType(I.getOperand(0), InstID, Vals))
-          AbbrevToUse = FUNCTION_INST_RET_VAL_ABBREV;
-      } else {
-        for (unsigned i = 0, e = NumOperands; i != e; ++i)
-          pushValueAndType(I.getOperand(i), InstID, Vals);
-      }
+    auto *RI = cast<ReturnInst>(&I);
+    Code = bitc::FUNC_CODE_INST_RET;
+    if (!RI->getMemoryOperand() && !RI->getReturnValue())
+      AbbrevToUse = FUNCTION_INST_RET_VOID_ABBREV;
+    else if (!RI->getMemoryOperand()) {
+      if (!pushValueAndType(I.getOperand(0), InstID, Vals))
+        AbbrevToUse = FUNCTION_INST_RET_VAL_ABBREV;
+    } else {
+      for (unsigned i = 0, e = I.getNumOperands(); i != e; ++i)
+        pushValueAndType(I.getOperand(i), InstID, Vals);
     }
-    break;
+  } break;
   case Instruction::Br:
     {
       Code = bitc::FUNC_CODE_INST_BR;

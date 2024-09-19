@@ -171,7 +171,7 @@ private:
 
 /// An instruction for reading from memory. This uses the SubclassData field in
 /// Value to store whether or not the load is volatile.
-class LoadInst : public Instruction {
+class LoadInst : public MemorySSAReadInstruction {
   using VolatileField = BoolBitfieldElementT<0>;
   using AlignmentField = AlignmentBitfieldElementT<VolatileField::NextBit>;
   using OrderingField = AtomicOrderingBitfieldElementT<AlignmentField::NextBit>;
@@ -2861,7 +2861,7 @@ DEFINE_TRANSPARENT_OPERAND_ACCESSORS(LandingPadInst, Value)
 /// Return a value (possibly void), from a function.  Execution
 /// does not continue in this function any longer.
 ///
-class ReturnInst : public Instruction {
+class ReturnInst : public MemorySSAReadInstruction {
   using HasMemoryOperandField = BoolBitfieldElementT<0>;
 
   ReturnInst(const ReturnInst &RI);
@@ -2894,7 +2894,8 @@ public:
   static ReturnInst *Create(LLVMContext &C, Value *retVal = nullptr,
                             InsertPosition InsertBefore = nullptr,
                             Value *memVal = nullptr) {
-    return new (!!retVal) ReturnInst(C, retVal, InsertBefore, memVal);
+    return new (!!retVal + !!memVal)
+        ReturnInst(C, retVal, InsertBefore, memVal);
   }
 
   static ReturnInst *Create(LLVMContext &C, BasicBlock *InsertAtEnd) {
@@ -2909,6 +2910,12 @@ public:
     return getNumOperands() > getSubclassData<HasMemoryOperandField>()
                ? getOperand(0)
                : nullptr;
+  }
+
+  Value *getMemoryOperand() const {
+    if (!getSubclassData<HasMemoryOperandField>())
+      return nullptr;
+    return getOperand(getNumOperands() - 1);
   }
 
   unsigned getNumSuccessors() const { return 0; }

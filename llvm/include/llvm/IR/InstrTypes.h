@@ -1125,6 +1125,23 @@ DEFINE_TRANSPARENT_OPERAND_ACCESSORS(CmpInst, Value)
 
 raw_ostream &operator<<(raw_ostream &OS, CmpInst::Predicate Pred);
 
+class MemorySSAReadInstruction : public Instruction {
+protected:
+  using Instruction::Instruction;
+
+public:
+  Value *getMemoryOperand() const;
+
+  static bool classof(const Instruction *I) {
+    return I->getOpcode() == Instruction::Load ||
+           I->getOpcode() == Instruction::Ret;
+  }
+
+  static bool classof(const Value *V) {
+    return isa<Instruction>(V) && classof(cast<Instruction>(V));
+  }
+};
+
 /// A lightweight accessor for an operand bundle meant to be passed
 /// around by value.
 struct OperandBundleUse {

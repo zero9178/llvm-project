@@ -7119,6 +7119,17 @@ bool LLParser::parseRet(Instruction *&Inst, BasicBlock *BB,
   if (parseType(Ty, true /*void allowed*/))
     return true;
 
+  Value *MemoryOperand = nullptr;
+  if (Ty == Type::getMemoryTy(Context)) {
+    if (parseToken(lltok::lsquare, "expected '[' after 'mem'") ||
+        parseValue(Ty, MemoryOperand, PFS) ||
+        parseToken(lltok::rsquare, "expected ']' after value"))
+      return true;
+
+    if (parseType(Ty, true /*void allowed*/))
+      return true;
+  }
+
   Type *ResType = PFS.getFunction().getReturnType();
 
   if (Ty->isVoidTy()) {
@@ -7126,7 +7137,7 @@ bool LLParser::parseRet(Instruction *&Inst, BasicBlock *BB,
       return error(TypeLoc, "value doesn't match function result type '" +
                                 getTypeString(ResType) + "'");
 
-    Inst = ReturnInst::Create(Context);
+    Inst = ReturnInst::Create(Context, nullptr, nullptr, MemoryOperand);
     return false;
   }
 
@@ -7138,7 +7149,7 @@ bool LLParser::parseRet(Instruction *&Inst, BasicBlock *BB,
     return error(TypeLoc, "value doesn't match function result type '" +
                               getTypeString(ResType) + "'");
 
-  Inst = ReturnInst::Create(Context, RV);
+  Inst = ReturnInst::Create(Context, RV, nullptr, MemoryOperand);
   return false;
 }
 

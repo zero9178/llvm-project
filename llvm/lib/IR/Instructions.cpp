@@ -919,9 +919,10 @@ CallBrInst *CallBrInst::Create(CallBrInst *CBI, ArrayRef<OperandBundleDef> OpB,
 //===----------------------------------------------------------------------===//
 
 ReturnInst::ReturnInst(const ReturnInst &RI)
-    : Instruction(Type::getVoidTy(RI.getContext()), Instruction::Ret,
-                  OperandTraits<ReturnInst>::op_end(this) - RI.getNumOperands(),
-                  RI.getNumOperands()) {
+    : MemorySSAReadInstruction(
+          Type::getVoidTy(RI.getContext()), Instruction::Ret,
+          OperandTraits<ReturnInst>::op_end(this) - RI.getNumOperands(),
+          RI.getNumOperands()) {
   if (RI.getNumOperands())
     Op<0>() = RI.Op<0>();
   SubclassOptionalData = RI.SubclassOptionalData;
@@ -929,9 +930,10 @@ ReturnInst::ReturnInst(const ReturnInst &RI)
 
 ReturnInst::ReturnInst(LLVMContext &C, Value *retVal,
                        InsertPosition InsertBefore, Value *memVal)
-    : Instruction(Type::getVoidTy(C), Instruction::Ret,
-                  OperandTraits<ReturnInst>::op_end(this) - !!retVal, !!retVal,
-                  InsertBefore) {
+    : MemorySSAReadInstruction(Type::getVoidTy(C), Instruction::Ret,
+                               OperandTraits<ReturnInst>::op_end(this) -
+                                   (!!retVal + !!memVal),
+                               !!retVal + !!memVal, InsertBefore) {
   setSubclassData<HasMemoryOperandField>(false);
   if (retVal) {
     Op<0>() = retVal;
@@ -1287,7 +1289,7 @@ LoadInst::LoadInst(Type *Ty, Value *Ptr, const Twine &Name, bool isVolatile,
 LoadInst::LoadInst(Type *Ty, Value *Ptr, const Twine &Name, bool isVolatile,
                    Align Align, AtomicOrdering Order, SyncScope::ID SSID,
                    InsertPosition InsertBef)
-    : Instruction(Ty, Load, &Op<0>(), 1, InsertBef) {
+    : MemorySSAReadInstruction(Ty, Load, &Op<0>(), 1, InsertBef) {
   Op<0>() = Ptr;
   setVolatile(isVolatile);
   setAlignment(Align);
@@ -4424,4 +4426,15 @@ UnreachableInst *UnreachableInst::cloneImpl() const {
 
 FreezeInst *FreezeInst::cloneImpl() const {
   return new FreezeInst(getOperand(0));
+}
+
+Value *MemorySSAReadInstruction::getMemoryOperand() const {
+  switch (getOpcode()) {
+  case Instruction::Load:
+    return cast<LoadInst>(this)->getMemoryOperand();
+  case Instruction::Ret:
+    return cast<ReturnInst>(this)->getMemoryOperand();
+  default:
+    llvm_unreachable("Not a memory SSA instruction");
+  }
 }

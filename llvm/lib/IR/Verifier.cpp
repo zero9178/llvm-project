@@ -3136,14 +3136,14 @@ void Verifier::visitBranchInst(BranchInst &BI) {
 
 void Verifier::visitReturnInst(ReturnInst &RI) {
   Function *F = RI.getParent()->getParent();
-  unsigned N = RI.getNumOperands();
+  Value *R = RI.getReturnValue();
   if (F->getReturnType()->isVoidTy())
-    Check(N == 0,
+    Check(!R,
           "Found return instr that returns non-void in Function of void "
           "return type!",
           &RI, F->getReturnType());
   else
-    Check(N == 1 && F->getReturnType() == RI.getOperand(0)->getType(),
+    Check(R && F->getReturnType() == R->getType(),
           "Function return type does not match operand "
           "type of return inst!",
           &RI, F->getReturnType());

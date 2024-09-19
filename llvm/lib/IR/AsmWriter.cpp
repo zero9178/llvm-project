@@ -4247,8 +4247,8 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
   // Print out the opcode...
   Out << I.getOpcodeName();
 
-  if (auto *Load = dyn_cast<LoadInst>(&I))
-    if (Value *MemoryOp = Load->getMemoryOperand()) {
+  if (auto *Read = dyn_cast<MemorySSAReadInstruction>(&I))
+    if (Value *MemoryOp = Read->getMemoryOperand()) {
       Out << " mem[";
       writeOperand(MemoryOp, /*PrintType=*/false);
       Out << "]";
@@ -4582,6 +4582,12 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
     TypePrinter.print(LI->getType(), Out);
     Out << ", ";
     writeOperand(LI->getPointerOperand(), true);
+  } else if (const auto *RI = dyn_cast<ReturnInst>(&I)) {
+    Out << ' ';
+    if (Value *V = RI->getReturnValue())
+      writeOperand(V, true);
+    else
+      TypePrinter.print(Type::getVoidTy(RI->getContext()), Out);
   } else if (Operand) {   // Print the normal way.
     if (const auto *GEP = dyn_cast<GetElementPtrInst>(&I)) {
       Out << ' ';

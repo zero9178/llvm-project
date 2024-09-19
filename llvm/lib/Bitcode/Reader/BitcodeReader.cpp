@@ -5476,10 +5476,19 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
         unsigned OpTypeID;
         if (getValueTypePair(Record, OpNum, NextValueNo, Op, OpTypeID, CurBB))
           return error("Invalid record");
-        if (OpNum != Record.size())
+
+        Value *MO = nullptr;
+        if (Op->getType() == Type::getMemoryTy(Context)) {
+          MO = Op;
+          Op = nullptr;
+        } else if (Size > OpNum)
+          if (getValueTypePair(Record, OpNum, NextValueNo, MO, OpTypeID, CurBB))
+            return error("Invalid record");
+
+        if (OpNum != Size)
           return error("Invalid record");
 
-        I = ReturnInst::Create(Context, Op);
+        I = ReturnInst::Create(Context, Op, nullptr, MO);
         InstructionList.push_back(I);
         break;
       }
