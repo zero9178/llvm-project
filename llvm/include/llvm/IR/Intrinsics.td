@@ -321,6 +321,7 @@ def IIT_I4 : IIT_Int<4, 58>;
 def IIT_AARCH64_SVCOUNT : IIT_VT<aarch64svcount, 59>;
 def IIT_V6 : IIT_Vec<6, 60>;
 def IIT_V10 : IIT_Vec<10, 61>;
+def IIT_MEMORY : IIT_VT<memory, 62>;
 }
 
 defvar IIT_all_FixedTypes = !filter(iit, IIT_all,
@@ -495,6 +496,7 @@ def llvm_anyptr_ty     : LLVMAnyPointerType;     // ptr addrspace(N)
 def llvm_empty_ty      : LLVMType<OtherVT>;      // { }
 def llvm_metadata_ty   : LLVMType<MetadataVT>;   // !{...}
 def llvm_token_ty      : LLVMType<token>;        // token
+def llvm_mem_ty      : LLVMType<memory>;        // token
 
 def llvm_x86mmx_ty     : LLVMType<x86mmx>;
 
@@ -1662,6 +1664,18 @@ def int_experimental_gc_get_pointer_base : DefaultAttrsIntrinsic<
 def int_experimental_gc_get_pointer_offset : DefaultAttrsIntrinsic<
     [llvm_i64_ty], [llvm_anyptr_ty],
     [IntrNoMem, IntrWillReturn, ReadNone<ArgIndex<0>>, NoCapture<ArgIndex<0>>]>;
+
+//===------------------------ MemorySSA Intrinsics ------------------------===//
+
+def int_mem_call : Intrinsic<[llvm_token_ty],
+                              [llvm_mem_ty, llvm_anyptr_ty, llvm_vararg_ty],
+                              [Throws]>;
+
+def int_mem_call_result : DefaultAttrsIntrinsic<
+    [llvm_any_ty], [llvm_token_ty], [IntrNoMem]>;
+
+def int_mem_call_mem : DefaultAttrsIntrinsic<
+    [llvm_mem_ty], [llvm_token_ty], [IntrNoMem]>;
 
 //===------------------------ Coroutine Intrinsics ---------------===//
 // These are documented in docs/Coroutines.rst

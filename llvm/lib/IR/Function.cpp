@@ -1148,6 +1148,9 @@ static void DecodeIITType(unsigned &NextElt, ArrayRef<unsigned char> Infos,
   case IIT_TOKEN:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Token, 0));
     return;
+  case IIT_MEMORY:
+    OutputTable.push_back(IITDescriptor::get(IITDescriptor::Memory, 0));
+    return;
   case IIT_METADATA:
     OutputTable.push_back(IITDescriptor::get(IITDescriptor::Metadata, 0));
     return;
@@ -1400,6 +1403,8 @@ static Type *DecodeFixedType(ArrayRef<Intrinsic::IITDescriptor> &Infos,
   case IITDescriptor::MMX: return Type::getX86_MMXTy(Context);
   case IITDescriptor::AMX: return Type::getX86_AMXTy(Context);
   case IITDescriptor::Token: return Type::getTokenTy(Context);
+  case IITDescriptor::Memory:
+    return Type::getMemoryTy(Context);
   case IITDescriptor::Metadata: return Type::getMetadataTy(Context);
   case IITDescriptor::Half: return Type::getHalfTy(Context);
   case IITDescriptor::BFloat: return Type::getBFloatTy(Context);
@@ -1583,6 +1588,8 @@ static bool matchIntrinsicType(
     case IITDescriptor::MMX:  return !Ty->isX86_MMXTy();
     case IITDescriptor::AMX:  return !Ty->isX86_AMXTy();
     case IITDescriptor::Token: return !Ty->isTokenTy();
+    case IITDescriptor::Memory:
+      return Ty != Type::getMemoryTy(Ty->getContext());
     case IITDescriptor::Metadata: return !Ty->isMetadataTy();
     case IITDescriptor::Half: return !Ty->isHalfTy();
     case IITDescriptor::BFloat: return !Ty->isBFloatTy();

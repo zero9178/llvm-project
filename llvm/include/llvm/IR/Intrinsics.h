@@ -121,6 +121,7 @@ namespace Intrinsic {
       VarArg,
       MMX,
       Token,
+      Memory,
       Metadata,
       Half,
       BFloat,

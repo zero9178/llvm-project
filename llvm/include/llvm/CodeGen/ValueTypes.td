@@ -289,6 +289,7 @@ def aarch64svcount
 def spirvbuiltin : ValueType<0, 200>; // SPIR-V's builtin type
 
 let isNormalValueType = false in {
+def memory : ValueType<0, 247>;  // MemoryTy
 def token      : ValueType<0, 248>;  // TokenTy
 def MetadataVT : ValueType<0, 249> { // Metadata
   let LLVMName = "Metadata";

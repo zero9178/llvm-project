@@ -16,6 +16,20 @@ define void @test(ptr %arg0, mem %arg1) {
 ; CHECK-SAME: %[[PTR:[[:alnum:]]+]]
 ; CHECK-SAME: %[[MEM:[[:alnum:]]+]]
 define ptr @test2(ptr %arg0, mem %arg1) {
-  ; CHECK: ret mem[%[[MEM]]] ptr %[[PTR]]
-  ret mem[%arg1] ptr %arg0
+  ; CHECK: %[[TOKEN:.*]] = call
+  ; CHECK-SAME: @llvm.mem.call.p0
+  ; CHECK-SAME: mem %[[MEM]]
+  ; CHECK-SAME: %[[PTR]]
+  ; CHECK-SAME: %[[PTR]]
+  %t = call token (mem, ptr, ...) @llvm.mem.call.p0(mem %arg1, ptr elementtype(void (ptr, mem)) %arg0, ptr %arg0)
+  ; CHECK: %[[MEM2:.*]] = call mem @llvm.mem.call.mem(token %[[TOKEN]])
+  %mem = call mem @llvm.mem.call.mem(token %t)
+  ; CHECK: %[[PTR2:.*]] = call ptr @llvm.mem.call.result.p0(token %[[TOKEN]])
+  %ptr = call ptr @llvm.mem.call.result.p0(token %t)
+  ; CHECK: ret mem[%[[MEM2]]] ptr %[[PTR2]]
+  ret mem[%mem] ptr %ptr
 }
+
+declare token @llvm.mem.call.p0(mem, ptr, ...)
+declare mem @llvm.mem.call.mem(token)
+declare ptr @llvm.mem.call.result.p0(token)
