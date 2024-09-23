@@ -3320,6 +3320,10 @@ void ModuleBitcodeWriter::writeInstruction(const Instruction &I,
       Code = bitc::FUNC_CODE_INST_STORE;
     pushValueAndType(I.getOperand(1), InstID, Vals); // ptrty + ptr
     pushValueAndType(I.getOperand(0), InstID, Vals); // valty + val
+    if (cast<StoreInst>(I).getMemoryOperand()) {
+      pushValue(cast<StoreInst>(I).getMemoryOperand(), InstID, Vals);
+      pushValue(cast<StoreInst>(I).getMemoryOverwriteOperand(), InstID, Vals);
+    }
     Vals.push_back(getEncodedAlign(cast<StoreInst>(I).getAlign()));
     Vals.push_back(cast<StoreInst>(I).isVolatile());
     if (cast<StoreInst>(I).isAtomic()) {

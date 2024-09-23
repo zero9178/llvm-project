@@ -1341,11 +1341,30 @@ StoreInst::StoreInst(Value *val, Value *addr, bool isVolatile, Align Align,
     : StoreInst(val, addr, isVolatile, Align, AtomicOrdering::NotAtomic,
                 SyncScope::System, InsertBefore) {}
 
+StoreInst::StoreInst(Value *val, Value *addr, Value *MemoryOperand,
+                     bool isVolatile, Align Align)
+    : MemorySSAReadWriteInstruction(MemoryOperand
+                                        ? Type::getMemoryTy(val->getContext())
+                                        : Type::getVoidTy(val->getContext()),
+                                    Store, &Op<0>(), MemoryOperand ? 4 : 2) {
+  setSubclassData<HasMemoryOperandsField>(static_cast<bool>(MemoryOperand));
+  Op<0>() = val;
+  Op<1>() = addr;
+  if (MemoryOperand) {
+    Op<2>() = MemoryOperand;
+    Op<3>() = MemoryOperand;
+  }
+  setVolatile(isVolatile);
+  setAlignment(Align);
+  setAtomic(AtomicOrdering::NotAtomic);
+  AssertOK();
+}
+
 StoreInst::StoreInst(Value *val, Value *addr, bool isVolatile, Align Align,
                      AtomicOrdering Order, SyncScope::ID SSID,
                      InsertPosition InsertBefore)
-    : Instruction(Type::getVoidTy(val->getContext()), Store, &Op<0>(), 2,
-                  InsertBefore) {
+    : MemorySSAReadWriteInstruction(Type::getVoidTy(val->getContext()), Store,
+                                    &Op<0>(), 2, InsertBefore) {
   Op<0>() = val;
   Op<1>() = addr;
   setVolatile(isVolatile);
@@ -4434,6 +4453,17 @@ Value *MemorySSAReadInstruction::getMemoryOperand() const {
     return cast<LoadInst>(this)->getMemoryOperand();
   case Instruction::Ret:
     return cast<ReturnInst>(this)->getMemoryOperand();
+  case Instruction::Store:
+    return cast<StoreInst>(this)->getMemoryOperand();
+  default:
+    llvm_unreachable("Not a memory SSA instruction");
+  }
+}
+
+Value *MemorySSAReadWriteInstruction::getMemoryOverwriteOperand() const {
+  switch (getOpcode()) {
+  case Instruction::Store:
+    return cast<StoreInst>(this)->getMemoryOverwriteOperand();
   default:
     llvm_unreachable("Not a memory SSA instruction");
   }

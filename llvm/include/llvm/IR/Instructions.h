@@ -308,12 +308,14 @@ DEFINE_TRANSPARENT_OPERAND_ACCESSORS(LoadInst, Value)
 //===----------------------------------------------------------------------===//
 
 /// An instruction for storing to memory.
-class StoreInst : public Instruction {
+class StoreInst : public MemorySSAReadWriteInstruction {
   using VolatileField = BoolBitfieldElementT<0>;
   using AlignmentField = AlignmentBitfieldElementT<VolatileField::NextBit>;
   using OrderingField = AtomicOrderingBitfieldElementT<AlignmentField::NextBit>;
+  using HasMemoryOperandsField = BoolBitfieldElementT<OrderingField::NextBit>;
   static_assert(
-      Bitfield::areContiguous<VolatileField, AlignmentField, OrderingField>(),
+      Bitfield::areContiguous<VolatileField, AlignmentField, OrderingField,
+                              HasMemoryOperandsField>(),
       "Bitfields must be contiguous");
 
   void AssertOK();
@@ -330,6 +332,8 @@ public:
             InsertPosition InsertBefore);
   StoreInst(Value *Val, Value *Ptr, bool isVolatile, Align Align,
             InsertPosition InsertBefore = nullptr);
+  StoreInst(Value *Val, Value *Ptr, Value *MemoryOperand, bool isVolatile,
+            Align Align);
   StoreInst(Value *Val, Value *Ptr, bool isVolatile, Align Align,
             AtomicOrdering Order, SyncScope::ID SSID = SyncScope::System,
             InsertPosition InsertBefore = nullptr);
@@ -406,6 +410,20 @@ public:
   /// Returns the address space of the pointer operand.
   unsigned getPointerAddressSpace() const {
     return getPointerOperandType()->getPointerAddressSpace();
+  }
+
+  Value *getMemoryOperand() const {
+    if (!getSubclassData<HasMemoryOperandsField>())
+      return nullptr;
+
+    return Op<2>();
+  }
+
+  Value *getMemoryOverwriteOperand() const {
+    if (!getSubclassData<HasMemoryOperandsField>())
+      return nullptr;
+
+    return Op<3>();
   }
 
   // Methods for support type inquiry through isa, cast, and dyn_cast:

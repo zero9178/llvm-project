@@ -8249,6 +8249,16 @@ int LLParser::parseStore(Instruction *&Inst, PerFunctionState &PFS) {
   AtomicOrdering Ordering = AtomicOrdering::NotAtomic;
   SyncScope::ID SSID = SyncScope::System;
 
+  Value *MemVal = nullptr;
+  if (Lex.getKind() == lltok::Type &&
+      Lex.getTyVal() == Type::getMemoryTy(Context)) {
+    Lex.Lex();
+    if (parseToken(lltok::lsquare, "expected '[' after 'mem'") ||
+        parseValue(Type::getMemoryTy(getContext()), MemVal, PFS) ||
+        parseToken(lltok::rsquare, "expected ']' after value"))
+      return true;
+  }
+
   if (Lex.getKind() == lltok::kw_atomic) {
     isAtomic = true;
     Lex.Lex();
@@ -8282,7 +8292,11 @@ int LLParser::parseStore(Instruction *&Inst, PerFunctionState &PFS) {
   if (!Alignment)
     Alignment = M->getDataLayout().getABITypeAlign(Val->getType());
 
-  Inst = new StoreInst(Val, Ptr, isVolatile, *Alignment, Ordering, SSID);
+  if (MemVal) {
+    assert(Ordering == AtomicOrdering::NotAtomic);
+    Inst = new StoreInst(Val, Ptr, MemVal, isVolatile, *Alignment);
+  } else
+    Inst = new StoreInst(Val, Ptr, isVolatile, *Alignment, Ordering, SSID);
   return AteExtraComma ? InstExtraComma : InstNormal;
 }
 

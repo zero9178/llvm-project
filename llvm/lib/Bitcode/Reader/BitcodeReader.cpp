@@ -6270,6 +6270,8 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
     case bitc::FUNC_CODE_INST_STORE_OLD: { // STORE2:[ptrty, ptr, val, align, vol]
       unsigned OpNum = 0;
       Value *Val, *Ptr;
+      Value *MemoryOperand = nullptr;
+      Value *MemoryOverwriteOperand = nullptr;
       unsigned PtrTypeID, ValTypeID;
       if (getValueTypePair(Record, OpNum, NextValueNo, Ptr, PtrTypeID, CurBB))
         return error("Invalid record");
@@ -6277,6 +6279,16 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
       if (BitCode == bitc::FUNC_CODE_INST_STORE) {
         if (getValueTypePair(Record, OpNum, NextValueNo, Val, ValTypeID, CurBB))
           return error("Invalid record");
+        if (OpNum + 2 != Record.size()) {
+          if (getValueTypePair(Record, OpNum, NextValueNo, MemoryOperand,
+                               ValTypeID, CurBB))
+            return error("Invalid record");
+          if (getValueTypePair(Record, OpNum, NextValueNo,
+                               MemoryOverwriteOperand, ValTypeID, CurBB))
+            return error("Invalid record");
+
+          ResTypeID = getVirtualTypeID(Type::getMemoryTy(Context));
+        }
       } else {
         ValTypeID = getContainedTypeID(PtrTypeID);
         if (popValue(Record, OpNum, NextValueNo, getTypeByID(ValTypeID),
@@ -6297,7 +6309,7 @@ Error BitcodeReader::parseFunctionBody(Function *F) {
         return error("store of unsized type");
       if (!Align)
         Align = TheModule->getDataLayout().getABITypeAlign(Val->getType());
-      I = new StoreInst(Val, Ptr, Record[OpNum + 1], *Align);
+      I = new StoreInst(Val, Ptr, MemoryOperand, Record[OpNum + 1], *Align);
       InstructionList.push_back(I);
       break;
     }

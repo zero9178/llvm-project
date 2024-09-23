@@ -8,8 +8,10 @@
 define void @test(ptr %arg0, mem %arg1) {
   ; CHECK: load mem[%[[MEM]]]
   %a = load mem[%arg1] i32, ptr %arg0
-  ; CHECK: ret mem[%[[MEM]]] void
-  ret mem[%arg1] void
+  ; CHECK: %[[MEM2:.*]] = store mem[%[[MEM]]]
+  %mem = store mem[%arg1] i32 0, ptr %arg0
+  ; CHECK: ret mem[%[[MEM2]]] void
+  ret mem[%mem] void
 }
 
 ; CHECK-LABEL: @test2(

@@ -1134,7 +1134,24 @@ public:
 
   static bool classof(const Instruction *I) {
     return I->getOpcode() == Instruction::Load ||
-           I->getOpcode() == Instruction::Ret;
+           I->getOpcode() == Instruction::Ret ||
+           I->getOpcode() == Instruction::Store;
+  }
+
+  static bool classof(const Value *V) {
+    return isa<Instruction>(V) && classof(cast<Instruction>(V));
+  }
+};
+
+class MemorySSAReadWriteInstruction : public MemorySSAReadInstruction {
+protected:
+  using MemorySSAReadInstruction::MemorySSAReadInstruction;
+
+public:
+  Value *getMemoryOverwriteOperand() const;
+
+  static bool classof(const Instruction *I) {
+    return I->getOpcode() == Instruction::Store;
   }
 
   static bool classof(const Value *V) {

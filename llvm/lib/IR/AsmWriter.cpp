@@ -4588,6 +4588,11 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
       writeOperand(V, true);
     else
       TypePrinter.print(Type::getVoidTy(RI->getContext()), Out);
+  } else if (const auto *SI = dyn_cast<StoreInst>(&I)) {
+    Out << ' ';
+    writeOperand(SI->getValueOperand(), true);
+    Out << ", ";
+    writeOperand(SI->getPointerOperand(), true);
   } else if (Operand) {   // Print the normal way.
     if (const auto *GEP = dyn_cast<GetElementPtrInst>(&I)) {
       Out << ' ';
@@ -4603,9 +4608,8 @@ void AssemblyWriter::printInstruction(const Instruction &I) {
 
     // Select, Store, ShuffleVector, CmpXchg and AtomicRMW always print all
     // types.
-    if (isa<SelectInst>(I) || isa<StoreInst>(I) || isa<ShuffleVectorInst>(I) ||
-        isa<ReturnInst>(I) || isa<AtomicCmpXchgInst>(I) ||
-        isa<AtomicRMWInst>(I)) {
+    if (isa<SelectInst>(I) || isa<ShuffleVectorInst>(I) ||
+        isa<AtomicCmpXchgInst>(I) || isa<AtomicRMWInst>(I)) {
       PrintAllTypes = true;
     } else {
       for (unsigned i = 1, E = I.getNumOperands(); i != E; ++i) {
