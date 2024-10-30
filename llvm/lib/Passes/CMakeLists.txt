@@ -25,6 +25,7 @@ add_llvm_component_library(LLVMPasses
   IPO
   InstCombine
   IRPrinter
+  MemorySSA
   ObjCARC
   Scalar
   Support

@@ -1132,11 +1132,7 @@ protected:
 public:
   Value *getMemoryOperand() const;
 
-  static bool classof(const Instruction *I) {
-    return I->getOpcode() == Instruction::Load ||
-           I->getOpcode() == Instruction::Ret ||
-           I->getOpcode() == Instruction::Store;
-  }
+  static bool classof(const Instruction *I);
 
   static bool classof(const Value *V) {
     return isa<Instruction>(V) && classof(cast<Instruction>(V));
@@ -1158,6 +1154,12 @@ public:
     return isa<Instruction>(V) && classof(cast<Instruction>(V));
   }
 };
+
+inline bool MemorySSAReadInstruction::classof(const Instruction *I) {
+  return I->getOpcode() == Instruction::Load ||
+         I->getOpcode() == Instruction::Ret ||
+         MemorySSAReadWriteInstruction::classof(I);
+}
 
 /// A lightweight accessor for an operand bundle meant to be passed
 /// around by value.
