@@ -225,6 +225,8 @@ public:
   /// Return true if this is 'token'.
   bool isTokenTy() const { return getTypeID() == TokenTyID; }
 
+  bool isMemTy() const { return getTypeID() == MemoryTyID; }
+
   /// True if this is an instance of IntegerType.
   bool isIntegerTy() const { return getTypeID() == IntegerTyID; }
 

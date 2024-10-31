@@ -99,11 +99,6 @@ void llvm::CloneFunctionInto(Function *NewFunc, const Function *OldFunc,
   NewFunc->setIsNewDbgInfoFormat(OldFunc->IsNewDbgInfoFormat);
   assert(NameSuffix && "NameSuffix cannot be null!");
 
-#ifndef NDEBUG
-  for (const Argument &I : OldFunc->args())
-    assert(VMap.count(&I) && "No mapping from source argument specified!");
-#endif
-
   bool ModuleLevelChanges = Changes > CloneFunctionChangeType::LocalChangesOnly;
 
   // Copy all attributes other than those stored in the AttributeList.  We need
@@ -138,7 +133,7 @@ void llvm::CloneFunctionInto(Function *NewFunc, const Function *OldFunc,
 
   // Clone any argument attributes that are present in the VMap.
   for (const Argument &OldArg : OldFunc->args()) {
-    if (Argument *NewArg = dyn_cast<Argument>(VMap[&OldArg])) {
+    if (Argument *NewArg = dyn_cast_or_null<Argument>(VMap[&OldArg])) {
       NewArgAttrs[NewArg->getArgNo()] =
           OldAttrs.getParamAttrs(OldArg.getArgNo());
     }

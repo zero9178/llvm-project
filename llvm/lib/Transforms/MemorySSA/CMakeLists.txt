@@ -1,5 +1,6 @@
 add_llvm_component_library(LLVMMemorySSA
         Construction.cpp
+        Deconstruction.cpp
 
         ADDITIONAL_HEADER_DIRS
         ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms
