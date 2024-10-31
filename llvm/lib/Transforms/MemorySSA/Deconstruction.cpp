@@ -58,6 +58,8 @@ static void deconstructMemSSAForm(Function &F) {
               Intr->getArgOperand(1),
               llvm::to_vector_of<Value *>(llvm::drop_begin(Intr->args(), 2)),
               "", Intr);
+          NewCall->setTailCallKind(Intr->getTailCallKind());
+          NewCall->setCallingConv(Intr->getCallingConv());
 
           for (User *U : llvm::make_early_inc_range(Intr->users())) {
             auto *SubIntr = dyn_cast<IntrinsicInst>(U);

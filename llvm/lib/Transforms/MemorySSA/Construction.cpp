@@ -102,6 +102,9 @@ static void buildMemSSAForm(Function &F, FunctionAnalysisManager &FM) {
         token->addParamAttr(1, Attribute::get(oldCall->getContext(),
                                               Attribute::ElementType,
                                               oldCall->getFunctionType()));
+        token->setTailCallKind(oldCall->getTailCallKind());
+        token->setCallingConv(oldCall->getCallingConv());
+
         currentDef = CallInst::Create(
             Intrinsic::getDeclaration(F.getParent(), Intrinsic::mem_call_mem),
             token, "", oldCall);
