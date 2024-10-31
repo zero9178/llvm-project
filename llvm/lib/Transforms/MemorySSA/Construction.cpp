@@ -13,6 +13,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Transforms/Utils/Cloning.h"
@@ -83,6 +84,40 @@ static void buildMemSSAForm(Function &F, FunctionAnalysisManager &FM) {
         oldRet->eraseFromParent();
         continue;
       }
+      case Instruction::Call: {
+        auto *oldCall = cast<CallInst>(&inst);
+        if (oldCall->getIntrinsicID() != Intrinsic::not_intrinsic)
+          continue;
+
+        // TODO: Copy many of the attributes, metadata etc.
+        SmallVector<Value *> args{currentDef, oldCall->getCalledOperand()};
+        llvm::append_range(args, oldCall->args());
+        auto *token =
+            CallInst::Create(Intrinsic::getDeclaration(
+                                 F.getParent(), Intrinsic::mem_call,
+                                 {
+                                     oldCall->getCalledOperand()->getType(),
+                                 }),
+                             args, "", oldCall);
+        token->addParamAttr(1, Attribute::get(oldCall->getContext(),
+                                              Attribute::ElementType,
+                                              oldCall->getFunctionType()));
+        currentDef = CallInst::Create(
+            Intrinsic::getDeclaration(F.getParent(), Intrinsic::mem_call_mem),
+            token, "", oldCall);
+
+        if (!oldCall->getType()->isVoidTy()) {
+          oldCall->replaceAllUsesWith(CallInst::Create(
+              Intrinsic::getDeclaration(F.getParent(),
+                                        Intrinsic::mem_call_result,
+                                        oldCall->getType()),
+              token, "", oldCall));
+        }
+
+        oldCall->eraseFromParent();
+
+        continue;
+      }
       default:
         continue;
       }
@@ -101,6 +136,9 @@ PreservedAnalyses ConstructMemorySSA::run(Module &M,
     if (!F.arg_empty() &&
         std::prev(F.arg_end())->getType() == Type::getMemoryTy(F.getContext()))
       continue;
+    if (F.isIntrinsic())
+      continue;
+
     changed = true;
 
     auto vector = llvm::to_vector(F.getFunctionType()->params());
