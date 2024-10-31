@@ -22,8 +22,8 @@ define fastcc i32 @calling(i32 %arg0, ptr %arg1) cold {
   ; CHECK-SAME: ptr readonly %[[TMP1]]
   ; CHECK-SAME: ) #[[CALLING_ATTRS]]
   ; CHECK: %[[MEM:.*]] = call mem @llvm.mem.call.mem(token %[[T]])
-  ; CHECK: %[[R:.*]] = call i32 @llvm.mem.call.result.i32(token %[[T]])
-  %r = tail call fastcc i32 @calling(i32 %arg0, ptr readonly %arg1) cold
+  ; CHECK: %[[R:.*]] = call zeroext i32 @llvm.mem.call.result.i32(token %[[T]])
+  %r = tail call fastcc zeroext i32 @calling(i32 %arg0, ptr readonly %arg1) cold
   ; CHECK: ret mem[%[[MEM]]] i32 %[[R]]
   ret i32 %r
 }

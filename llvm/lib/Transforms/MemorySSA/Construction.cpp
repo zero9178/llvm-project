@@ -127,6 +127,9 @@ static void buildMemSSAForm(Function &F, FunctionAnalysisManager &FM) {
                                token, "", oldCall);
           oldCall->replaceAllUsesWith(NewCall);
           NewCall->takeName(oldCall);
+          NewCall->setAttributes(NewCall->getAttributes().addRetAttributes(
+              F.getContext(),
+              AttrBuilder(F.getContext(), OldAttributes.getRetAttrs())));
         }
 
         oldCall->eraseFromParent();

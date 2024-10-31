@@ -70,7 +70,6 @@ static void deconstructMemSSAForm(Function &F) {
             NewAttributes = NewAttributes.addParamAttributes(
                 F.getContext(), I - 2,
                 AttrBuilder(F.getContext(), OldAttributes.getParamAttrs(I)));
-          NewCall->setAttributes(NewAttributes);
 
           for (User *U : llvm::make_early_inc_range(Intr->users())) {
             auto *SubIntr = dyn_cast<IntrinsicInst>(U);
@@ -81,6 +80,10 @@ static void deconstructMemSSAForm(Function &F) {
             case Intrinsic::mem_call_result:
               SubIntr->replaceAllUsesWith(NewCall);
               NewCall->takeName(SubIntr);
+              NewAttributes = NewAttributes.addRetAttributes(
+                  F.getContext(),
+                  AttrBuilder(F.getContext(),
+                              SubIntr->getAttributes().getRetAttrs()));
               SubIntr->eraseFromParent();
               continue;
             case Intrinsic::mem_call_mem:
@@ -91,6 +94,7 @@ static void deconstructMemSSAForm(Function &F) {
               continue;
             }
           }
+          NewCall->setAttributes(NewAttributes);
 
           Intr->eraseFromParent();
         });
