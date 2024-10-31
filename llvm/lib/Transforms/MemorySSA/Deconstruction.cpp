@@ -61,6 +61,17 @@ static void deconstructMemSSAForm(Function &F) {
           NewCall->setTailCallKind(Intr->getTailCallKind());
           NewCall->setCallingConv(Intr->getCallingConv());
 
+          AttributeList OldAttributes = Intr->getAttributes();
+          AttributeList NewAttributes =
+              NewCall->getAttributes().addFnAttributes(
+                  F.getContext(),
+                  AttrBuilder(F.getContext(), OldAttributes.getFnAttrs()));
+          for (unsigned I : llvm::seq<unsigned>(2, Intr->arg_size()))
+            NewAttributes = NewAttributes.addParamAttributes(
+                F.getContext(), I - 2,
+                AttrBuilder(F.getContext(), OldAttributes.getParamAttrs(I)));
+          NewCall->setAttributes(NewAttributes);
+
           for (User *U : llvm::make_early_inc_range(Intr->users())) {
             auto *SubIntr = dyn_cast<IntrinsicInst>(U);
             if (!SubIntr)

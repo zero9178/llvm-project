@@ -13,19 +13,23 @@ define i32 @load_store_ret(i32 %arg0, ptr %arg1) {
 }
 
 ; CHECK-LABEL: define fastcc i32 @calling(
-; CHECK-SAME: i32 %[[TMP0:.*]], ptr %[[TMP1:.*]], mem %[[TMP2:.*]]) {
-define fastcc i32 @calling(i32 %arg0, ptr %arg1) {
+; CHECK-SAME: i32 %[[TMP0:.*]], ptr %[[TMP1:.*]], mem %[[TMP2:.*]]) #[[CALLING_ATTRS:[[:alnum:]]+]] {
+define fastcc i32 @calling(i32 %arg0, ptr %arg1) cold {
   ; CHECK: %[[T:.*]] = tail call fastcc token (mem, ptr, ...) @llvm.mem.call.p0(
   ; CHECK-SAME: mem %[[TMP2]]
   ; CHECK-SAME: ptr elementtype(i32 (i32, ptr)) @calling
   ; CHECK-SAME: i32 %[[TMP0]]
-  ; CHECK-SAME: ptr %[[TMP1]]
+  ; CHECK-SAME: ptr readonly %[[TMP1]]
+  ; CHECK-SAME: ) #[[CALLING_ATTRS]]
   ; CHECK: %[[MEM:.*]] = call mem @llvm.mem.call.mem(token %[[T]])
   ; CHECK: %[[R:.*]] = call i32 @llvm.mem.call.result.i32(token %[[T]])
-  %r = tail call fastcc i32 @calling(i32 %arg0, ptr %arg1)
+  %r = tail call fastcc i32 @calling(i32 %arg0, ptr readonly %arg1) cold
   ; CHECK: ret mem[%[[MEM]]] i32 %[[R]]
   ret i32 %r
 }
 
 ; CHECK-LABEL: declare i32 @unaffected(i32)
 declare i32 @unaffected(i32)
+
+; CHECK: attributes #[[CALLING_ATTRS]] =
+; CHECK-SAME: cold
