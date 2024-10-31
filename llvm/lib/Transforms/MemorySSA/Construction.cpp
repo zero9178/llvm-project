@@ -136,7 +136,7 @@ PreservedAnalyses ConstructMemorySSA::run(Module &M,
     if (!F.arg_empty() &&
         std::prev(F.arg_end())->getType() == Type::getMemoryTy(F.getContext()))
       continue;
-    if (F.isIntrinsic())
+    if (F.isDeclaration())
       continue;
 
     changed = true;

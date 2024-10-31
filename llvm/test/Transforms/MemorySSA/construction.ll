@@ -1,5 +1,7 @@
 ; RUN: opt -p memory-ssa-construction %s -S | FileCheck %s
 
+; CHECK-LABEL: declare i32 @unaffected(i32)
+
 ; CHECK-LABEL: define i32 @load_store_ret(
 ; CHECK-SAME: i32 %[[TMP0:.*]], ptr %[[TMP1:.*]], mem %[[TMP2:.*]]) {
 define i32 @load_store_ret(i32 %arg0, ptr %arg1) {
@@ -26,3 +28,5 @@ define i32 @calling(i32 %arg0, ptr %arg1) {
   ; CHECK: ret mem[%[[MEM]]] i32 %[[R]]
   ret i32 %r
 }
+
+declare i32 @unaffected(i32)
