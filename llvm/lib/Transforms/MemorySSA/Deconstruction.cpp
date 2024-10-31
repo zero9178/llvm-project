@@ -67,6 +67,7 @@ static void deconstructMemSSAForm(Function &F) {
             switch (SubIntr->getIntrinsicID()) {
             case Intrinsic::mem_call_result:
               SubIntr->replaceAllUsesWith(NewCall);
+              NewCall->takeName(SubIntr);
               SubIntr->eraseFromParent();
               continue;
             case Intrinsic::mem_call_mem:
@@ -100,10 +101,12 @@ PreservedAnalyses DeconstructMemorySSA::run(Module &M,
     auto *newFunction =
         Function::Create(FunctionType::get(F.getReturnType(), vector,
                                            F.getFunctionType()->isVarArg()),
-                         F.getLinkage(), F.getName(), F.getParent());
+                         F.getLinkage(), F.getName(), nullptr);
     ValueToValueMapTy map;
-    for (auto [old, newArg] : llvm::zip(F.args(), newFunction->args()))
+    for (auto [old, newArg] : llvm::zip(F.args(), newFunction->args())) {
       map[&old] = &newArg;
+      newArg.takeName(&old);
+    }
 
     SmallVector<ReturnInst *, 8> Returns; // Ignore returns cloned.
     CloneFunctionInto(newFunction, &F, map,
@@ -112,6 +115,7 @@ PreservedAnalyses DeconstructMemorySSA::run(Module &M,
 
     newFunction->takeName(&F);
     F.replaceAllUsesWith(newFunction);
+    F.getParent()->getFunctionList().insert(F.getIterator(), newFunction);
     F.eraseFromParent();
   }
 

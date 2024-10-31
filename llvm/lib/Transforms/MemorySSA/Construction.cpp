@@ -107,11 +107,13 @@ static void buildMemSSAForm(Function &F, FunctionAnalysisManager &FM) {
             token, "", oldCall);
 
         if (!oldCall->getType()->isVoidTy()) {
-          oldCall->replaceAllUsesWith(CallInst::Create(
-              Intrinsic::getDeclaration(F.getParent(),
-                                        Intrinsic::mem_call_result,
-                                        oldCall->getType()),
-              token, "", oldCall));
+          auto *NewCall =
+              CallInst::Create(Intrinsic::getDeclaration(
+                                   F.getParent(), Intrinsic::mem_call_result,
+                                   oldCall->getType()),
+                               token, "", oldCall);
+          oldCall->replaceAllUsesWith(NewCall);
+          NewCall->takeName(oldCall);
         }
 
         oldCall->eraseFromParent();
@@ -146,10 +148,12 @@ PreservedAnalyses ConstructMemorySSA::run(Module &M,
     auto *newFunction =
         Function::Create(FunctionType::get(F.getReturnType(), vector,
                                            F.getFunctionType()->isVarArg()),
-                         F.getLinkage(), F.getName(), F.getParent());
+                         F.getLinkage(), F.getName(), nullptr);
     ValueToValueMapTy map;
-    for (auto [old, newArg] : llvm::zip_first(F.args(), newFunction->args()))
+    for (auto [old, newArg] : llvm::zip_first(F.args(), newFunction->args())) {
       map[&old] = &newArg;
+      newArg.takeName(&old);
+    }
 
     SmallVector<ReturnInst *, 8> Returns; // Ignore returns cloned.
     CloneFunctionInto(newFunction, &F, map,
@@ -158,6 +162,7 @@ PreservedAnalyses ConstructMemorySSA::run(Module &M,
 
     newFunction->takeName(&F);
     F.replaceAllUsesWith(newFunction);
+    F.getParent()->getFunctionList().insert(F.getIterator(), newFunction);
     F.eraseFromParent();
 
     buildMemSSAForm(
