@@ -77,6 +77,8 @@
 #include "llvm/Transforms/Instrumentation/PGOCtxProfLowering.h"
 #include "llvm/Transforms/Instrumentation/PGOForceFunctionAttrs.h"
 #include "llvm/Transforms/Instrumentation/PGOInstrumentation.h"
+#include "llvm/Transforms/MemorySSA/Construction.h"
+#include "llvm/Transforms/MemorySSA/Deconstruction.h"
 #include "llvm/Transforms/Scalar/ADCE.h"
 #include "llvm/Transforms/Scalar/AlignmentFromAssumptions.h"
 #include "llvm/Transforms/Scalar/AnnotationRemarks.h"
@@ -302,6 +304,10 @@ static cl::opt<bool> EnableSampledInstr(
 static cl::opt<bool> UseLoopVersioningLICM(
     "enable-loop-versioning-licm", cl::init(false), cl::Hidden,
     cl::desc("Enable the experimental Loop Versioning LICM pass"));
+
+static cl::opt<bool> EnablePersistentMemorySSA(
+    "enable-persistent-memory-ssa", cl::init(true), cl::Hidden,
+    cl::desc("Enable persistent MemorySSA in the LLVM IR"));
 
 namespace llvm {
 extern cl::opt<bool> EnableMemProfContextDisambiguation;
@@ -1430,6 +1436,9 @@ PassBuilder::buildModuleOptimizationPipeline(OptimizationLevel Level,
   if (EnableGlobalAnalyses)
     MPM.addPass(RecomputeGlobalsAAPass());
 
+  if (EnablePersistentMemorySSA)
+    MPM.addPass(ConstructMemorySSA());
+
   invokeOptimizerEarlyEPCallbacks(MPM, Level);
 
   FunctionPassManager OptimizePM;
@@ -1524,6 +1533,9 @@ PassBuilder::buildModuleOptimizationPipeline(OptimizationLevel Level,
                                                 PTO.EagerlyInvalidateAnalyses));
 
   invokeOptimizerLastEPCallbacks(MPM, Level);
+
+  if (EnablePersistentMemorySSA)
+    MPM.addPass(DeconstructMemorySSA());
 
   // Split out cold code. Splitting is done late to avoid hiding context from
   // other optimizations and inadvertently regressing performance. The tradeoff
